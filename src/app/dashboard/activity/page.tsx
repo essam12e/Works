@@ -7,6 +7,20 @@ import { requireManagerCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 
+type ActivityTask = {
+  status: string;
+  comments: Array<{ id: string }>;
+  attachments: Array<{ id: string }>;
+};
+
+type ActivityEmployee = {
+  id: string;
+  name: string;
+  title: string;
+  updatedAt: Date;
+  tasks: ActivityTask[];
+};
+
 export default async function ActivityPage() {
   const user = await requireManagerCompany();
   const employees = await prisma.employee.findMany({
@@ -23,6 +37,8 @@ export default async function ActivityPage() {
     orderBy: { updatedAt: "desc" },
   });
 
+  const activityEmployees = employees as ActivityEmployee[];
+
   return (
     <div className="space-y-8">
       <div>
@@ -30,13 +46,13 @@ export default async function ActivityPage() {
         <p className="mt-2 text-slate-500">ملخص أعمال الموظفين بعد التسليم والمراجعة، مع الوصول السريع للتعليقات والمرفقات.</p>
       </div>
 
-      {employees.length ? (
+      {activityEmployees.length ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          {employees.map((employee) => {
-            const approved = employee.tasks.filter((task) => task.status === "APPROVED").length;
-            const waiting = employee.tasks.filter((task) => task.status === "WAITING_REVIEW").length;
-            const comments = employee.tasks.reduce((total, task) => total + task.comments.length, 0);
-            const attachments = employee.tasks.reduce((total, task) => total + task.attachments.length, 0);
+          {activityEmployees.map((employee: ActivityEmployee) => {
+            const approved = employee.tasks.filter((task: ActivityTask) => task.status === "APPROVED").length;
+            const waiting = employee.tasks.filter((task: ActivityTask) => task.status === "WAITING_REVIEW").length;
+            const comments = employee.tasks.reduce((total: number, task: ActivityTask) => total + task.comments.length, 0);
+            const attachments = employee.tasks.reduce((total: number, task: ActivityTask) => total + task.attachments.length, 0);
 
             return (
               <Link

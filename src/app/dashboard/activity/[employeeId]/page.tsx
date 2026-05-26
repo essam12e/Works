@@ -7,6 +7,27 @@ import { requireManagerCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/format";
 
+type EmployeeActivityTask = {
+  id: string;
+  title: string;
+  dueDate: Date;
+  updatedAt: Date;
+  status: string;
+  priority: string;
+  comments: Array<{
+    id: string;
+    authorName: string;
+    createdAt: Date;
+    body: string;
+  }>;
+  attachments: Array<{
+    id: string;
+    fileUrl: string;
+    fileName: string;
+    source: string;
+  }>;
+};
+
 export default async function EmployeeActivityPage({ params }: { params: Promise<{ employeeId: string }> }) {
   const user = await requireManagerCompany();
   const { employeeId } = await params;
@@ -24,6 +45,7 @@ export default async function EmployeeActivityPage({ params }: { params: Promise
   });
 
   if (!employee) notFound();
+  const tasks = employee.tasks as EmployeeActivityTask[];
 
   return (
     <div className="space-y-8">
@@ -36,7 +58,7 @@ export default async function EmployeeActivityPage({ params }: { params: Promise
       </div>
 
       <div className="space-y-5">
-        {employee.tasks.map((task) => (
+        {tasks.map((task: EmployeeActivityTask) => (
           <article key={task.id} className="panel p-6">
             <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
               <div>
@@ -55,7 +77,7 @@ export default async function EmployeeActivityPage({ params }: { params: Promise
               <section className="rounded-2xl bg-slate-50 p-4">
                 <h2 className="font-bold text-slate-950">التعليقات</h2>
                 <div className="mt-3 space-y-3">
-                  {task.comments.map((comment) => (
+                  {task.comments.map((comment: EmployeeActivityTask["comments"][number]) => (
                     <div key={comment.id} className="rounded-xl bg-white p-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="font-bold text-slate-900">{comment.authorName}</p>
@@ -71,7 +93,7 @@ export default async function EmployeeActivityPage({ params }: { params: Promise
               <section className="rounded-2xl border border-slate-100 p-4">
                 <h2 className="font-bold text-slate-950">المرفقات</h2>
                 <div className="mt-3 space-y-2">
-                  {task.attachments.map((file) => (
+                  {task.attachments.map((file: EmployeeActivityTask["attachments"][number]) => (
                     <a
                       key={file.id}
                       href={file.fileUrl}
@@ -92,7 +114,7 @@ export default async function EmployeeActivityPage({ params }: { params: Promise
           </article>
         ))}
 
-        {!employee.tasks.length && (
+        {!tasks.length && (
           <div className="panel p-8 text-center">
             <h2 className="text-xl font-bold text-slate-950">لا توجد مهام لهذا الموظف</h2>
             <p className="mt-2 text-slate-500">ستظهر هنا المهام والتعليقات والمرفقات عند إسناد الأعمال له.</p>

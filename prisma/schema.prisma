@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String?
+  role         String    @default("MANAGER")
+  companyId    String?
+  company      Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  employee     Employee?
+  comments     TaskComment[]
+  notifications Notification[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Company {
+  id          String     @id @default(cuid())
+  name        String
+  logoUrl     String?
+  industry    String
+  email       String
+  phone       String
+  description String
+  users       User[]
+  employees   Employee[]
+  tasks       Task[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Employee {
+  id          String         @id @default(cuid())
+  companyId   String
+  company     Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId      String?        @unique
+  user        User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name        String
+  title       String
+  email       String
+  whatsapp    String?
+  status      String         @default("ACTIVE")
+  portalToken String         @unique
+  tasks       Task[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([companyId, email])
+}
+
+model Task {
+  id           String      @id @default(cuid())
+  companyId    String
+  company      Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId   String
+  employee     Employee    @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  title        String
+  description  String
+  instructions String
+  priority     String       @default("MEDIUM")
+  dueDate      DateTime
+  status       String       @default("NEW")
+  reviewNote   String?
+  comments     TaskComment[]
+  attachments  TaskAttachment[]
+  notifications Notification[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorName String
+  body      String
+  createdAt DateTime @default(now())
+}
+
+model TaskAttachment {
+  id           String           @id @default(cuid())
+  taskId       String
+  task         Task             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  fileName     String
+  fileUrl      String
+  mimeType     String
+  size         Int
+  source       String
+  createdAt    DateTime         @default(now())
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String?
+  user      User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  taskId    String?
+  task      Task?               @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  channel   String   @default("EMAIL")
+  recipient String
+  subject   String
+  body      String
+  sentAt    DateTime?
+  createdAt DateTime            @default(now())
+}

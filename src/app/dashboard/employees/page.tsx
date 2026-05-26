@@ -7,12 +7,23 @@ import { requireManagerCompany } from "@/lib/auth";
 import { appUrl } from "@/lib/email";
 import { prisma } from "@/lib/db";
 
+type EmployeeRow = {
+  id: string;
+  name: string;
+  title: string;
+  email: string;
+  whatsapp: string | null;
+  status: string;
+  portalToken: string;
+};
+
 export default async function EmployeesPage() {
   const user = await requireManagerCompany();
   const employees = await prisma.employee.findMany({
     where: { companyId: user.companyId },
     orderBy: { createdAt: "desc" },
   });
+  const employeeRows = employees as EmployeeRow[];
 
   return (
     <div className="space-y-8">
@@ -24,7 +35,7 @@ export default async function EmployeesPage() {
       <EmployeeCreateForm />
 
       <section className="panel overflow-hidden">
-        {employees.length ? (
+        {employeeRows.length ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-right text-sm">
               <thead className="bg-slate-50 text-slate-500">
@@ -38,7 +49,7 @@ export default async function EmployeesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {employees.map((employee) => (
+                {employeeRows.map((employee: EmployeeRow) => (
                   <tr key={employee.id} className="align-top">
                     <td className="px-5 py-4">
                       <p className="font-bold text-slate-950">{employee.name}</p>

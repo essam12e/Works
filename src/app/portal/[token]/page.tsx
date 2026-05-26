@@ -7,6 +7,33 @@ import { PriorityBadge, StatusBadge } from "@/components/ui";
 import { prisma } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/format";
 
+type PortalTask = {
+  id: string;
+  title: string;
+  description: string;
+  instructions: string;
+  dueDate: Date;
+  status: string;
+  priority: string;
+  reviewNote: string | null;
+  attachments: PortalAttachment[];
+  comments: PortalComment[];
+};
+
+type PortalAttachment = {
+  id: string;
+  fileUrl: string;
+  fileName: string;
+  source: string;
+};
+
+type PortalComment = {
+  id: string;
+  authorName: string;
+  createdAt: Date;
+  body: string;
+};
+
 export default async function EmployeePortalPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const employee = await prisma.employee.findUnique({
@@ -24,6 +51,7 @@ export default async function EmployeePortalPage({ params }: { params: Promise<{
   });
 
   if (!employee || employee.status !== "ACTIVE") notFound();
+  const tasks = employee.tasks as PortalTask[];
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -36,9 +64,9 @@ export default async function EmployeePortalPage({ params }: { params: Promise<{
       </header>
 
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-        {employee.tasks.map((task) => {
-          const managerFiles = task.attachments.filter((file) => file.source === "MANAGER");
-          const employeeFiles = task.attachments.filter((file) => file.source === "EMPLOYEE");
+        {tasks.map((task: PortalTask) => {
+          const managerFiles = task.attachments.filter((file: PortalAttachment) => file.source === "MANAGER");
+          const employeeFiles = task.attachments.filter((file: PortalAttachment) => file.source === "EMPLOYEE");
           return (
             <article key={task.id} className="panel p-6">
               <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
@@ -76,7 +104,7 @@ export default async function EmployeePortalPage({ params }: { params: Promise<{
               <section className="mt-6 rounded-2xl border border-slate-100 p-4">
                 <h3 className="font-bold text-slate-950">التعليقات</h3>
                 <div className="mt-3 space-y-3">
-                  {task.comments.map((comment) => (
+                  {task.comments.map((comment: PortalComment) => (
                     <div key={comment.id} className="rounded-xl bg-slate-50 p-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="font-bold text-slate-900">{comment.authorName}</p>
@@ -100,7 +128,7 @@ export default async function EmployeePortalPage({ params }: { params: Promise<{
           );
         })}
 
-        {!employee.tasks.length && (
+        {!tasks.length && (
           <div className="panel p-8 text-center">
             <h2 className="text-xl font-bold text-slate-950">لا توجد مهام مسندة حالياً</h2>
             <p className="mt-2 text-slate-500">ستظهر هنا المهام الجديدة عند إسنادها لك.</p>
@@ -122,7 +150,7 @@ function AttachmentGroup({
     <div>
       <p className="text-sm font-bold text-slate-700">{title}</p>
       <div className="mt-2 space-y-2">
-        {files.map((file) => (
+        {files.map((file: { id: string; fileUrl: string; fileName: string }) => (
           <a key={file.id} href={file.fileUrl} target="_blank" className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100">
             <span className="truncate">{file.fileName}</span>
             <Download size={14} />

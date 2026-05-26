@@ -7,6 +7,20 @@ import { requireManagerCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/format";
 
+type ReviewTask = {
+  id: string;
+  title: string;
+  dueDate: Date;
+  priority: string;
+  employee: { name: string };
+  attachments: Array<{ id: string }>;
+  comments: Array<{
+    id: string;
+    authorName: string;
+    body: string;
+  }>;
+};
+
 export default async function ReviewsPage() {
   const user = await requireManagerCompany();
   const tasks = await prisma.task.findMany({
@@ -15,6 +29,8 @@ export default async function ReviewsPage() {
     orderBy: { updatedAt: "desc" },
   });
 
+  const reviewTasks = tasks as ReviewTask[];
+
   return (
     <div className="space-y-8">
       <div>
@@ -22,9 +38,9 @@ export default async function ReviewsPage() {
         <p className="mt-2 text-slate-500">اعتمد التسليم أو اطلب تعديلاً مع ملاحظة واضحة للموظف.</p>
       </div>
 
-      {tasks.length ? (
+      {reviewTasks.length ? (
         <div className="grid gap-5">
-          {tasks.map((task) => (
+          {reviewTasks.map((task: ReviewTask) => (
             <article key={task.id} className="panel p-6">
               <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                 <div>
@@ -43,7 +59,7 @@ export default async function ReviewsPage() {
                 <div className="rounded-2xl bg-slate-50 p-4">
                   <h3 className="font-bold text-slate-950">آخر التعليقات</h3>
                   <div className="mt-3 space-y-2">
-                    {task.comments.map((comment) => (
+                    {task.comments.map((comment: ReviewTask["comments"][number]) => (
                       <p key={comment.id} className="text-sm leading-7 text-slate-600">
                         <span className="font-bold">{comment.authorName}: </span>{comment.body}
                       </p>

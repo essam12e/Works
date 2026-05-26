@@ -7,6 +7,22 @@ import { requireManagerCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/format";
 
+type TaskListEmployee = {
+  id: string;
+  name: string;
+  title: string;
+  portalToken: string;
+};
+
+type TaskListRow = {
+  id: string;
+  title: string;
+  priority: string;
+  status: string;
+  dueDate: Date;
+  employee: TaskListEmployee;
+};
+
 export default async function TasksPage() {
   const user = await requireManagerCompany();
   const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
@@ -15,6 +31,9 @@ export default async function TasksPage() {
     prisma.task.findMany({ where: { companyId: user.companyId }, include: { employee: true }, orderBy: { createdAt: "desc" } }),
   ]);
 
+  const employeeOptions = employees as TaskListEmployee[];
+  const taskRows = tasks as TaskListRow[];
+
   return (
     <div className="space-y-8">
       <div>
@@ -22,10 +41,10 @@ export default async function TasksPage() {
         <p className="mt-2 text-slate-500">أنشئ مهمة، أضف تعليماتها ومرفقاتها، ثم أسندها لموظف محدد.</p>
       </div>
 
-      <TaskCreateForm employees={employees} />
+      <TaskCreateForm employees={employeeOptions} />
 
       <section className="panel overflow-hidden">
-        {tasks.length ? (
+        {taskRows.length ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-right text-sm">
               <thead className="bg-slate-50 text-slate-500">
@@ -40,7 +59,7 @@ export default async function TasksPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {tasks.map((task) => (
+                {taskRows.map((task: TaskListRow) => (
                   <tr key={task.id}>
                     <td className="px-5 py-4 font-bold text-slate-950">{task.title}</td>
                     <td className="px-5 py-4 text-slate-600">{task.employee.name}</td>

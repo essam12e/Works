@@ -8,6 +8,26 @@ import { requireManagerCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/format";
 
+type TaskDetailsEmployee = {
+  id: string;
+  name: string;
+};
+
+type TaskDetailsAttachment = {
+  id: string;
+  fileUrl: string;
+  fileName: string;
+  size: number;
+  source: string;
+};
+
+type TaskDetailsComment = {
+  id: string;
+  authorName: string;
+  createdAt: Date;
+  body: string;
+};
+
 export default async function TaskDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireManagerCompany();
   const { id } = await params;
@@ -20,8 +40,11 @@ export default async function TaskDetailsPage({ params }: { params: Promise<{ id
   ]);
   if (!task) notFound();
 
-  const managerFiles = task.attachments.filter((file) => file.source === "MANAGER");
-  const employeeFiles = task.attachments.filter((file) => file.source === "EMPLOYEE");
+  const taskEmployees = employees as TaskDetailsEmployee[];
+  const taskAttachments = task.attachments as TaskDetailsAttachment[];
+  const taskComments = task.comments as TaskDetailsComment[];
+  const managerFiles = taskAttachments.filter((file: TaskDetailsAttachment) => file.source === "MANAGER");
+  const employeeFiles = taskAttachments.filter((file: TaskDetailsAttachment) => file.source === "EMPLOYEE");
 
   return (
     <div className="space-y-8">
@@ -52,7 +75,7 @@ export default async function TaskDetailsPage({ params }: { params: Promise<{ id
         <label>
           <span className="label">الموظف</span>
           <select name="employeeId" defaultValue={task.employeeId} className="field">
-            {employees.map((employee) => (
+            {taskEmployees.map((employee: TaskDetailsEmployee) => (
               <option key={employee.id} value={employee.id}>{employee.name}</option>
             ))}
           </select>
@@ -101,7 +124,7 @@ export default async function TaskDetailsPage({ params }: { params: Promise<{ id
       <section className="panel p-6">
         <h2 className="text-xl font-bold text-slate-950">التعليقات والملاحظات</h2>
         <div className="mt-5 space-y-3">
-          {task.comments.map((comment) => (
+          {taskComments.map((comment: TaskDetailsComment) => (
             <div key={comment.id} className="rounded-2xl bg-slate-50 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-bold text-slate-950">{comment.authorName}</p>
@@ -126,7 +149,7 @@ function FileList({ files }: { files: { id: string; fileUrl: string; fileName: s
   if (!files.length) return <p className="mt-4 text-sm text-slate-500">لا توجد مرفقات.</p>;
   return (
     <div className="mt-4 space-y-2">
-      {files.map((file) => (
+      {files.map((file: { id: string; fileUrl: string; fileName: string; size: number }) => (
         <a key={file.id} href={file.fileUrl} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50" target="_blank">
           <span className="truncate">{file.fileName}</span>
           <Download size={16} />

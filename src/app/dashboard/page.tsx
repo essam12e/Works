@@ -6,6 +6,26 @@ import { requireManagerCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/format";
 
+type DashboardEmployee = {
+  name: string;
+  tasks: Array<{ status: string }>;
+};
+
+type DashboardTask = {
+  id: string;
+  title: string;
+  dueDate: Date;
+  status: string;
+  employee: { name: string };
+};
+
+type DashboardNotification = {
+  id: string;
+  subject: string;
+  body: string;
+  createdAt: Date;
+};
+
 export default async function DashboardPage() {
   const user = await requireManagerCompany();
   const [employees, tasks, waitingTasks, notifications] = await Promise.all([
@@ -15,10 +35,14 @@ export default async function DashboardPage() {
     prisma.notification.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 5 }),
   ]);
 
-  const completed = tasks.filter((task) => task.status === "APPROVED" || task.status === "COMPLETED").length;
-  const inProgress = tasks.filter((task) => task.status === "IN_PROGRESS" || task.status === "NEW").length;
-  const chartData = employees.map((employee) => {
-    const done = employee.tasks.filter((task) => task.status === "APPROVED").length;
+  const dashboardEmployees = employees as DashboardEmployee[];
+  const dashboardTasks = tasks as DashboardTask[];
+  const dashboardNotifications = notifications as DashboardNotification[];
+
+  const completed = dashboardTasks.filter((task: DashboardTask) => task.status === "APPROVED" || task.status === "COMPLETED").length;
+  const inProgress = dashboardTasks.filter((task: DashboardTask) => task.status === "IN_PROGRESS" || task.status === "NEW").length;
+  const chartData = dashboardEmployees.map((employee: DashboardEmployee) => {
+    const done = employee.tasks.filter((task: { status: string }) => task.status === "APPROVED").length;
     return {
       name: employee.name.split(" ")[0] ?? employee.name,
       الإنجاز: employee.tasks.length ? Math.round((done / employee.tasks.length) * 100) : 0,
@@ -55,7 +79,7 @@ export default async function DashboardPage() {
         <section className="panel p-6">
           <h2 className="text-xl font-bold text-slate-950">إشعارات المدير</h2>
           <div className="mt-5 space-y-3">
-            {notifications.map((notification) => (
+            {dashboardNotifications.map((notification: DashboardNotification) => (
               <div key={notification.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 <div className="flex items-start gap-3">
                   <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-teal-50 text-teal-700">
@@ -69,7 +93,7 @@ export default async function DashboardPage() {
                 </div>
               </div>
             ))}
-            {!notifications.length && <EmptyState title="لا توجد إشعارات" body="ستظهر هنا تعليقات الموظفين والتسليمات الجديدة." />}
+            {!dashboardNotifications.length && <EmptyState title="لا توجد إشعارات" body="ستظهر هنا تعليقات الموظفين والتسليمات الجديدة." />}
           </div>
         </section>
       </div>
@@ -77,7 +101,7 @@ export default async function DashboardPage() {
       <section className="panel p-6">
         <h2 className="text-xl font-bold text-slate-950">آخر المهام</h2>
         <div className="mt-5 grid gap-3 lg:grid-cols-2">
-          {tasks.slice(0, 6).map((task) => (
+          {dashboardTasks.slice(0, 6).map((task: DashboardTask) => (
             <div key={task.id} className="rounded-2xl border border-slate-100 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -88,7 +112,7 @@ export default async function DashboardPage() {
               </div>
             </div>
           ))}
-          {!tasks.length && <EmptyState title="لا توجد مهام" body="ابدأ بإنشاء مهمة وإسنادها لموظف." />}
+          {!dashboardTasks.length && <EmptyState title="لا توجد مهام" body="ابدأ بإنشاء مهمة وإسنادها لموظف." />}
         </div>
       </section>
     </div>
